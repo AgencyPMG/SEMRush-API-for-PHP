@@ -63,8 +63,23 @@ class SemRush
 	protected $apikey='XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
 	public $url, $useDomainLevelData, $db;
 	public $queryLimit=null;
+	
+	/*
+	We are going to provide backwards compatiblity with the old SEMRush API Class Created by "Indiana Jones"
+	 * @see http://php.bubble.ro
+	 * @author Indiana Jones <contact@bubble.ro>
+	*/
+	const TYPE_BY_ORGANIC = 1;
+    const TYPE_BY_ADWORDS = 2;
+    const TYPE_BY_ORGANIC_ORGANIC = 3;
+    const TYPE_BY_ADWORDS_ADWORDS = 4;
+    const TYPE_BY_ORGANIC_ADWORDS = 5;
+    const TYPE_BY_ADWORDS_ORGANIC = 6;
+    const TYPE_RELATED = 7;
+    const TYPE_RANK_VALUES = 0;
+
 		
-	public function __construct($url, $useDomainLevelData=true, $semrushdb='us')
+	public function __construct($url='', $useDomainLevelData=true, $semrushdb='us')
 	{
 		$this->url = $url;
 		$this->useDomainLevelData = $useDomainLevelData;
@@ -72,10 +87,30 @@ class SemRush
 		
 	}
 	
-	
 	public static function getValidDatabases()
 	{
 		return array('us', 'uk', 'ca', 'ru', 'de', 'fr', 'es', 'it', 'br', 'au', 'us.bing');
+	}
+	
+	public function search($url, $reportType = 0, $db = 'us', $limit = 500, $offset = 0)
+	{
+		$this->url = $url;
+		if($db != null)
+			$this->db = $db;
+		
+		$this->queryLimit = $limit;
+		//offset is not supported yet.
+		
+		if($reportType == self::TYPE_BY_ORGANIC) return $this->getOrganicKeywordsReport();
+		if($reportType == self::TYPE_BY_ADWORDS) return $this->getAdwordsKeywordReport();
+		if($reportType == self::TYPE_BY_ORGANIC_ORGANIC) return $this->getCompetitorsInOrganicSearchReport();
+		if($reportType == self::TYPE_BY_ADWORDS_ADWORDS) return $this->getCompetitorsInAdwordsSearchReport();
+		if($reportType == self::TYPE_BY_ORGANIC_ADWORDS) return $this->getPotentialAdTrafficBuyersReport();
+		if($reportType == self::TYPE_BY_ADWORDS_ORGANIC) return $this->getPotentialAdTrafficSellersReport();
+		if($reportType == self::TYPE_RELATED) return $this->getMainKeywordReport($url);
+		if($reportType == self::TYPE_RANK_VALUES) return $this->getMainReport();
+		
+		return null;
 	}
 	
 	
@@ -161,6 +196,7 @@ class SemRush
 		for($i=0;$i<sizeof($firstRow);$i++)
 		{
 			$firstRow[$i] = trim(strtolower(str_ireplace(' ', '_', $firstRow[$i])));
+			$firstRow[$i] = str_ireplace('(%)', 'percent', $firstRow[$i]);
 		}	
 		
 		
@@ -240,7 +276,7 @@ class SemRush
 		{
 			$query .= '&' . $paramName . '=' . $paramValue;
 		}
-
+		
 		return $url . $query;		
 		
 	}
@@ -261,7 +297,7 @@ class SemRush
 			return $data;
 		}
 		
-		throw new SemRushException(curl_getinfo($curl, CURLINFO_HTTP_CODE) .' - '. $data);
+		throw new SemRushException(curl_getinfo($curl, CURLINFO_HTTP_CODE) .' - '. $data . "\nURL: " . $request);
 		
 		curl_close($curl);
 		return $data;
