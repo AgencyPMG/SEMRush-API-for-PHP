@@ -209,7 +209,7 @@ class SemRush
 			{
 				if(isset($firstRow[$i]))
 				{
-					$r[$firstRow[$i]] = $row[$i];
+					$r[$firstRow[$i]] = trim($row[$i]);
 				}
 			}
 			$array[] = $r;
